@@ -1,0 +1,12 @@
+flask
+numpy>=2.0.2
+soundfile
+# Kokoro TTS - versión moderna con ONNX Runtime (v0.4.9)
+kokoro-onnx>=0.4.9
+# Misaki para procesamiento G2P (Grapheme-to-Phoneme)
+misaki[en]
+# ONNX Runtime GPU - IMPORTANTE: No instalar onnxruntime y onnxruntime-gpu juntos
+# Solo usar onnxruntime-gpu para soporte GPU
+onnxruntime-gpu
+# ffmpeg-python para compatibilidad de audio
+ffmpeg-python 

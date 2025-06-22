@@ -1,0 +1,39 @@
+# Archivos de debug de audio Kokoro
+debug_audio/
+*.wav
+*.mp3
+*.flac
+
+# Modelos Kokoro descargados
+models/
+.cache/
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+
+# Docker
+.dockerignore
+
+# Archivos de configuración específicos del usuario
+config.json
+
+# Cache específico de Kokoro
+.kokoro_cache/ 

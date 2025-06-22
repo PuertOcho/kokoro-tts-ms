@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  kokoro-tts:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    ports:
+      - "${KOKORO_PORT:-5002}:${FLASK_PORT:-5002}"
+    volumes:
+      # Montar modelos desde el host
+      - "${MODELS_PATH:-./app/models}:/app/models:ro"
+      # Directorio para audio de debug
+      - "${DEBUG_AUDIO_PATH:-./debug_audio}:/app/debug_audio"
+    environment:
+      - FLASK_HOST=${FLASK_HOST:-0.0.0.0}
+      - FLASK_PORT=${FLASK_PORT:-5002}
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-es}
+      - DEFAULT_VOICE=${DEFAULT_VOICE:-ef_dora}
+      - DEBUG_AUDIO=${DEBUG_AUDIO:-true}
+    restart: unless-stopped
+    container_name: ${CONTAINER_NAME:-kokoro-tts}
+    # Configuración GPU para ONNX Runtime
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: ${GPU_COUNT:-1}
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${FLASK_PORT:-5002}/health"]
+      interval: ${HEALTHCHECK_INTERVAL:-30s}
+      timeout: ${HEALTHCHECK_TIMEOUT:-10s}
+      retries: ${HEALTHCHECK_RETRIES:-3}
+      start_period: ${HEALTHCHECK_START_PERIOD:-60s}
