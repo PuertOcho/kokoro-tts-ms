@@ -1,25 +1,29 @@
-# Kokoro TTS v0.4.9 - Servicio de Síntesis de Voz
+# Kokoro TTS v1.0 - Servicio de Síntesis de Voz
 
-Servicio de Text-to-Speech usando **Kokoro ONNX v0.4.9** optimizado para español con soporte multiidioma.
+Servicio de Text-to-Speech usando **Kokoro ONNX v1.0** optimizado para español con soporte multiidioma y configuración parametrizada.
 
 ## 🚀 Características Principales
 
-- **Modelo Moderno**: Kokoro ONNX v0.4.9 con ONNX Runtime (más rápido y ligero)
+- **Modelo Moderno**: Kokoro ONNX v1.0 con ONNX Runtime optimizado
 - **Optimizado para Español**: Configuración predeterminada para español con 3 voces nativas
 - **Multiidioma**: Soporte para 8 idiomas (Español, Inglés, Francés, Italiano, Portugués, Hindi, Japonés, Chino)
 - **53 Voces Disponibles**: Amplia variedad de voces masculinas y femeninas
-- **Alta Velocidad**: RTF promedio de 0.25x (4x más rápido que tiempo real)
+- **Configuración Parametrizada**: Variables de entorno con archivo .env
+- **Alta Velocidad**: RTF optimizado para síntesis rápida
 - **Recomendaciones Inteligentes**: Selección automática de voces por idioma y género
 - **API REST Completa**: Endpoints para síntesis individual, por lotes y gestión
 - **Debug Integrado**: Guardado automático de archivos de audio para desarrollo
+- **Tests Completos**: Suite de pruebas sin dependencias externas
 
 ## 📊 Rendimiento
 
-- **RTF (Real Time Factor)**: 0.25x promedio (menor es mejor)
-- **Eficiencia por lotes**: 3.59x tiempo real
+- **RTF (Real Time Factor)**: Optimizado para síntesis rápida
+- **Síntesis individual**: ~0.8-1.5s por frase promedio
+- **Síntesis por lotes**: Procesamiento eficiente de múltiples textos
 - **Tamaño del modelo**: ~338MB (modelo + voces)
-- **Tiempo de carga**: < 5 segundos
+- **Tiempo de carga**: < 10 segundos
 - **Memoria**: Optimizado para uso eficiente de RAM
+- **Tests**: 100% exitosos en suite completa
 
 ## 🗣️ Voces en Español
 
@@ -54,30 +58,40 @@ Servicio de Text-to-Speech usando **Kokoro ONNX v0.4.9** optimizado para españo
 
 ```bash
 # 1. Clonar o acceder al directorio
-cd kokoro/
+cd kokoro-tts-ms/
 
-# 2. Los modelos ya están descargados en app/models/
+# 2. Configurar variables de entorno (opcional)
+cp environment.example .env
+# Editar .env con tus valores personalizados
+
+# 3. Los modelos ya están descargados en app/models/
 ls -lh app/models/
 # kokoro-v1.0.onnx (311M)
 # voices-v1.0.bin (27M)
 
-# 3. Construir y ejecutar
+# 4. Construir y ejecutar
 docker compose up --build -d
 
-# 4. Verificar estado
+# 5. Verificar estado
 curl http://localhost:5002/health
 ```
 
 ### Pruebas
 
 ```bash
-# Ejecutar suite completa de pruebas
-python3 test_kokoro_v1.py
+# Ejecutar suite completa de pruebas (sin dependencias externas)
+python3 test_service.py
+
+# Ejecutar con modo verboso
+python3 test_service.py --verbose
+
+# Test con configuración personalizada
+python3 test_service.py --url http://localhost:5002 --timeout 30 --verbose
 
 # Prueba rápida en español
 curl -X POST http://localhost:5002/synthesize_json \
   -H "Content-Type: application/json" \
-  -d '{"text": "Hola, soy Kokoro versión cero punto cuatro punto nueve", "language": "es", "voice": "ef_dora"}'
+  -d '{"text": "Hola, soy Kokoro versión uno punto cero", "language": "es", "voice": "ef_dora"}'
 ```
 
 ## 📖 API Reference
@@ -172,36 +186,90 @@ Estado del servicio
 
 ## 🔧 Configuración
 
-### Variables de Entorno
+### Configuración Parametrizada
 
-```bash
-FLASK_HOST=0.0.0.0
-FLASK_PORT=5002
-DEFAULT_LANGUAGE=es
-DEFAULT_VOICE=ef_dora
-DEBUG_AUDIO=true
-```
+El proyecto usa variables de entorno para una configuración flexible:
 
-### Docker Compose
+1. **Copia el archivo de ejemplo:**
+   ```bash
+   cp environment.example .env
+   ```
+
+2. **Edita el archivo .env:**
+   ```bash
+   # Configuración del servicio
+   KOKORO_PORT=5002
+   FLASK_HOST=0.0.0.0
+   FLASK_PORT=5002
+   
+   # Configuración de idioma y voz
+   DEFAULT_LANGUAGE=es
+   DEFAULT_VOICE=ef_dora
+   
+   # Configuración de debug
+   DEBUG_AUDIO=true
+   
+   # Configuración GPU
+   GPU_COUNT=1
+   ```
+
+### Variables de Entorno Disponibles
+
+| Variable | Descripción | Valor por defecto |
+|----------|-------------|-------------------|
+| `KOKORO_PORT` | Puerto externo del servicio | `5002` |
+| `FLASK_HOST` | Host donde Flask escucha | `0.0.0.0` |
+| `FLASK_PORT` | Puerto interno de Flask | `5002` |
+| `DEFAULT_LANGUAGE` | Idioma por defecto | `es` |
+| `DEFAULT_VOICE` | Voz por defecto | `ef_dora` |
+| `DEBUG_AUDIO` | Habilitar debug de audio | `true` |
+| `CONTAINER_NAME` | Nombre del contenedor | `kokoro-tts` |
+| `GPU_COUNT` | Cantidad de GPUs a usar | `1` |
+
+### Docker Compose Parametrizado
+
+El `docker-compose.yml` usa las variables del archivo `.env`:
 
 ```yaml
-version: '3.8'
 services:
   kokoro-tts:
-    build:
-      context: ./app
     ports:
-      - "5002:5002"
-    volumes:
-      - ./app/models:/app/models:ro
-      - ./debug_audio:/app/debug_audio
+      - "${KOKORO_PORT:-5002}:${FLASK_PORT:-5002}"
     environment:
-      - DEFAULT_LANGUAGE=es
-      - DEFAULT_VOICE=ef_dora
-      - DEBUG_AUDIO=true
+      - FLASK_HOST=${FLASK_HOST:-0.0.0.0}
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-es}
+      - DEFAULT_VOICE=${DEFAULT_VOICE:-ef_dora}
+      - DEBUG_AUDIO=${DEBUG_AUDIO:-true}
+    container_name: ${CONTAINER_NAME:-kokoro-tts}
 ```
 
 ## 🛠️ Desarrollo
+
+### Tests Completos
+
+El proyecto incluye una suite completa de tests sin dependencias externas:
+
+```bash
+# Ejecutar todos los tests
+python3 test_service.py
+
+# Modo verboso con detalles
+python3 test_service.py --verbose
+
+# Tests específicos con configuración
+python3 test_service.py --url http://localhost:5002 --timeout 30 --verbose
+```
+
+**Tests incluidos:**
+- ✅ Conectividad y salud del servicio
+- ✅ Endpoint de idiomas soportados
+- ✅ Endpoint de voces disponibles
+- ✅ Síntesis básica de texto a voz
+- ✅ Manejo de errores HTTP
+- ✅ Diferentes voces (ef_dora, em_alex, em_santa)
+- ✅ Síntesis por lotes
+
+Ver [README_TEST.md](README_TEST.md) para documentación completa de tests.
 
 ### Debug de Audio
 
@@ -218,7 +286,7 @@ curl http://localhost:5002/debug/audio/kokoro_v1_20250620_163734_621.wav -o audi
 ### Estructura del Proyecto
 
 ```
-kokoro/
+kokoro-tts-ms/
 ├── app/
 │   ├── app.py              # Aplicación Flask principal
 │   ├── Dockerfile          # Imagen Docker
@@ -227,22 +295,26 @@ kokoro/
 │       ├── kokoro-v1.0.onnx
 │       └── voices-v1.0.bin
 ├── debug_audio/           # Archivos de debug
-├── docker-compose.yml     # Configuración Docker
-├── test_kokoro_v1.py     # Suite de pruebas
+├── environment.example    # Plantilla de variables de entorno
+├── docker-compose.yml     # Configuración Docker parametrizada
+├── test_service.py       # Suite de pruebas sin dependencias
+├── README_TEST.md        # Documentación de tests
 └── README.md             # Este archivo
 ```
 
 ## 📊 Comparación de Versiones
 
-| Característica | v0.19 (Anterior) | v0.4.9 (Actual) |
-|----------------|------------------|-----------------|
-| Runtime | PyTorch + CUDA | ONNX Runtime |
-| Tamaño modelo | ~2GB | ~338MB |
-| RTF promedio | 0.03x | 0.25x |
-| Voces totales | 45 | 53 |
-| Carga inicial | ~30s | ~5s |
-| Uso de memoria | Alto | Optimizado |
-| Dependencias | torch, torchaudio | onnxruntime, misaki |
+| Característica | v0.4.9 (Anterior) | v1.0 (Actual) |
+|----------------|-------------------|---------------|
+| Runtime | ONNX Runtime | ONNX Runtime Optimizado |
+| Configuración | Hardcoded | Variables de entorno (.env) |
+| Tests | Manual | Suite automatizada completa |
+| Tamaño modelo | ~338MB | ~338MB |
+| Voces totales | 53 | 53 |
+| Carga inicial | ~5s | ~10s |
+| Uso de memoria | Optimizado | Optimizado |
+| Dependencias | onnxruntime, misaki | onnxruntime, misaki |
+| Docker Compose | Estático | Parametrizado |
 
 ## 🚨 Solución de Problemas
 
@@ -250,15 +322,21 @@ kokoro/
 
 ```bash
 # Verificar logs
-docker logs kokoro-tts-v1
+docker logs kokoro-tts
 
 # Verificar modelos
 ls -lh app/models/
+
+# Verificar configuración
+cat .env
 
 # Reconstruir imagen
 docker compose down
 docker compose build --no-cache
 docker compose up -d
+
+# Ejecutar tests de diagnóstico
+python3 test_service.py --verbose
 ```
 
 ### Audio de baja calidad
@@ -273,34 +351,39 @@ docker compose up -d
 - Evitar textos muy largos (>500 tokens)
 - Usar caracteres ASCII cuando sea posible
 
-## 🔄 Actualización desde v0.19
+## 🔄 Actualización desde v0.4.9
 
 Si vienes de la versión anterior:
 
 1. **Detener servicio anterior**: `docker compose down`
-2. **Limpiar imágenes**: `docker system prune -f`
-3. **Seguir instalación nueva**: Ver sección "Instalación Rápida"
+2. **Configurar variables de entorno**: `cp environment.example .env`
+3. **Limpiar imágenes**: `docker system prune -f`
+4. **Seguir instalación nueva**: Ver sección "Instalación Rápida"
+5. **Ejecutar tests**: `python3 test_service.py --verbose`
 
-Los archivos de configuración y API son compatibles.
+Los archivos de configuración y API son compatibles. La principal mejora es la parametrización con `.env` y tests completos.
 
 ## 📈 Métricas de Rendimiento
 
-Resultados de `test_kokoro_v1.py`:
+Resultados de `test_service.py`:
 
-- ✅ **Health Check**: Servicio funcionando
-- ✅ **Voces en Español**: 3/3 exitosas (RTF: 0.25x)
-- ✅ **Cambio de Idiomas**: 4/4 idiomas exitosos
-- ✅ **Recomendaciones**: 4/4 exitosas
-- ✅ **Síntesis por Lotes**: 3.59x eficiencia tiempo real
-- ✅ **Total**: 6/6 pruebas exitosas
+- ✅ **Conectividad y salud del servicio**: Modelo kokoro-v1.0, 53 voces disponibles
+- ✅ **Endpoint de idiomas**: 8 idiomas soportados (es, en, fr, it, pt, hi, ja, zh)
+- ✅ **Endpoint de voces**: 3 voces españolas (ef_dora, em_alex, em_santa)
+- ✅ **Síntesis básica**: ~3.5s duración audio, sample rate 24000Hz
+- ✅ **Manejo de errores**: Validación correcta de HTTP 400/415
+- ✅ **Diferentes voces**: 3/3 voces exitosas (~2.8-2.9s por síntesis)
+- ✅ **Síntesis por lotes**: 3/3 textos procesados (~4.8s duración total)
+- ✅ **Total**: 7/7 pruebas exitosas (100% tasa de éxito)
 
 ## 🤝 Contribuir
 
 Para reportar issues o contribuir:
 
-1. Ejecutar `test_kokoro_v1.py` para verificar el estado
-2. Incluir logs del contenedor en el reporte
-3. Especificar versión y configuración usada
+1. Ejecutar `python3 test_service.py --verbose` para verificar el estado
+2. Incluir logs del contenedor: `docker logs kokoro-tts`
+3. Incluir configuración usada: `cat .env` (sin datos sensibles)
+4. Especificar versión y parámetros de docker-compose
 
 ## 📄 Licencia
 
@@ -308,4 +391,4 @@ Este proyecto utiliza Kokoro ONNX bajo sus términos de licencia correspondiente
 
 ---
 
-**Kokoro TTS v0.4.9** - Síntesis de voz moderna, rápida y optimizada para español 🚀 
+**Kokoro TTS v1.0** - Síntesis de voz moderna, parametrizada y con tests completos 🚀 
