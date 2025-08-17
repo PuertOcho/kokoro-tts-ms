@@ -16,11 +16,11 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Instalar dependencias Python
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # IMPORTANTE: Resolver conflicto onnxruntime vs onnxruntime-gpu
 # Reinstalar onnxruntime-gpu para asegurar que tenga prioridad sobre onnxruntime
-RUN pip install --no-cache-dir --force-reinstall onnxruntime-gpu
+RUN pip install --force-reinstall onnxruntime-gpu
 
 # Copiar código de la aplicación
 COPY app.py .
